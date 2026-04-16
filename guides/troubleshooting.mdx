@@ -1,0 +1,135 @@
+---
+title: "Troubleshooting common Telecast issues"
+description: "Diagnose and fix the most common Telecast problems — sync failures, wrong channel config, missing media, broken search index, and deployment errors."
+---
+
+Most Telecast problems fall into one of four categories: sync failures (Telegram can't be reached or the channel is wrong), configuration mistakes, deployment environment issues, or stale search data. This page covers the most common issues and how to resolve them.
+
+## Sync and fetch issues
+
+<AccordionGroup>
+  <Accordion title="Error: remote snapshot has no posts — sync aborted">
+    Telecast found the channel but it appears to have no posts, or the fetch returned empty data. This usually means:
+
+    - The `channel` value in `constant.ts` is incorrect or the channel doesn't exist
+    - The channel is **private** — Telecast can only mirror public Telegram channels
+    - The `telegramHost` is wrong (should be `t.me`)
+
+    **Fix:** Double-check your `channel` setting (no `@` prefix), confirm the channel is public by visiting `https://t.me/your_channel` in a browser, and verify `telegramHost` is set to `t.me`.
+  </Accordion>
+
+  <Accordion title="Sync completes but media files are missing">
+    Individual media download failures are silently skipped to prevent a single broken URL from halting the entire sync. Missing media means those URLs couldn't be reached.
+
+    **Fix:** Check your internet connection and whether Telegram CDN is accessible from your build environment. Re-run `pnpm sync` — successfully fetched files are cached and won't be re-downloaded.
+  </Accordion>
+
+  <Accordion title="pnpm sync hangs or times out">
+    The sync fetches up to `maxPages * ~20` posts from Telegram. With `maxPages: 50` (the default), this is up to 1,000 posts and potentially hundreds of media files.
+
+    **Fix:** Reduce `maxPages` in `constant.ts` for faster syncs during development:
+
+    ```ts
+    maxPages: 10, // ~200 posts
+    ```
+
+    Restore to a higher value for production builds.
+  </Accordion>
+</AccordionGroup>
+
+## Configuration issues
+
+<AccordionGroup>
+  <Accordion title="Wrong channel posts are showing">
+    The `channel` field in `constant.ts` must be the exact Telegram username without the `@` prefix.
+
+    **Fix:**
+    ```ts
+    channel: 'toshikidev',  // correct — no @ sign
+    // NOT: channel: '@toshikidev'
+    ```
+  </Accordion>
+
+  <Accordion title="RSS feed or sitemap URLs are wrong">
+    The `siteUrl` is used to construct absolute URLs in the RSS feed, sitemap, and OG tags. If it's missing the `https://` or has a trailing slash issue, links will be malformed.
+
+    **Fix:** Set `siteUrl` to the full canonical URL without a trailing slash:
+    ```ts
+    siteUrl: 'https://tg.example.com',  // correct
+    // NOT: siteUrl: 'tg.example.com'
+    // NOT: siteUrl: 'https://tg.example.com/'
+    ```
+  </Accordion>
+
+  <Accordion title="Date/time displayed in wrong timezone">
+    Post timestamps are formatted using the `timezone` config value.
+
+    **Fix:** Set `timezone` to a valid IANA timezone string:
+    ```ts
+    timezone: 'America/New_York',
+    // or: 'Asia/Tokyo', 'Europe/London', 'UTC'
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Deployment issues
+
+<AccordionGroup>
+  <Accordion title="Static export produces no output or fails">
+    Pure static export requires setting the `NEXT_OUTPUT_MODE` environment variable before building.
+
+    **Fix:** Set the variable at build time:
+    ```bash
+    NEXT_OUTPUT_MODE=export pnpm build
+    ```
+
+    The static files are output to the `out/` directory.
+  </Accordion>
+
+  <Accordion title="Cloudflare image transforms not being applied">
+    Cloudflare transforms only activate in specific environments even when `cloudFlare.transform: true` is set. They apply when:
+    - `NODE_ENV=production`
+    - `CI=true` or `GITHUB_ACTIONS=true`
+    - `TELECAST_FORCE_CLOUDFLARE_TRANSFORM=1`
+
+    **Fix:** To force transforms locally for testing:
+    ```bash
+    TELECAST_FORCE_CLOUDFLARE_TRANSFORM=1 pnpm sync
+    ```
+  </Accordion>
+
+  <Accordion title="PWA not installing or service worker not registering">
+    The service worker requires HTTPS. It will not register on `http://` connections (except `localhost`).
+
+    **Fix:** Ensure your production deployment is served over HTTPS and `pwa: true` is set in `constant.ts`.
+  </Accordion>
+</AccordionGroup>
+
+## Search issues
+
+<AccordionGroup>
+  <Accordion title="Search returns no results">
+    The search index at `public/search/index.json` may be missing or empty.
+
+    **Fix:** Run `pnpm sync` and confirm the output includes a line like:
+    ```
+    [telecast] search index written to .../public/search/index.json
+    ```
+
+    Then check that the file exists and has content before running `pnpm build`.
+  </Accordion>
+
+  <Accordion title="Search results are outdated after new posts">
+    The search index is rebuilt every time `pnpm sync` runs. If you added posts and search doesn't reflect them, the index is stale.
+
+    **Fix:** Re-run `pnpm sync` (or `pnpm build`, which runs sync automatically) to rebuild the index with the latest posts.
+  </Accordion>
+</AccordionGroup>
+
+## General debugging tips
+
+<Tip>
+  The sync script prints detailed progress to the terminal. Read the output carefully — it logs every major step: snapshot fetch, media mirroring progress, search index size, and favicon/OG generation results.
+</Tip>
+
+After a sync, inspect `src/generated/static-snapshot.json` to verify your posts were fetched. If the file is empty or the `postIds` array is empty, the sync didn't retrieve any data from Telegram.

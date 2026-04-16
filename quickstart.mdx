@@ -1,80 +1,113 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: "Get started with Telecast"
+description: "Go from zero to a running Telegram channel microblog in minutes — fork the repo, configure your channel, run sync, and build for production."
 ---
 
-## Get started in three steps
+Telecast converts a public Telegram channel into a self-hosted static microblog. This guide walks you through everything from cloning the repository to running a production build.
 
-Get your documentation site running locally and make your first customization.
+<Steps>
+  <Step title="Check requirements">
+    Make sure you have the required tools installed before you begin.
 
-### Step 1: Set up your local environment
+    | Tool | Required version |
+    |------|-----------------|
+    | Node.js | `>= 22` |
+    | pnpm | `>= 10` |
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+    Verify your versions:
 
-### Step 2: Deploy your changes
+    ```bash
+    node --version
+    pnpm --version
+    ```
+  </Step>
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+  <Step title="Fork and clone the repository">
+    Fork [andatoshiki/telecast](https://github.com/andatoshiki/telecast) on GitHub, then clone your fork locally:
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+    ```bash
+    git clone https://github.com/YOUR_USERNAME/telecast.git
+    cd telecast
+    ```
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+    All site configuration lives in the repository — there are no external CMS or dashboard. Forking gives you full ownership of your instance.
+  </Step>
 
-### Step 3: Go live
+  <Step title="Install dependencies">
+    ```bash
+    pnpm install
+    ```
+  </Step>
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+  <Step title="Configure your channel">
+    Open `src/lib/constant.ts` and set at minimum the `channel` and `siteUrl` fields:
+
+    ```ts
+    export const SITE_CONSTANTS: SiteConstantConfig = {
+      channel: 'your_channel',
+      locale: 'en',
+      timezone: 'UTC',
+      siteUrl: 'https://tg.example.com',
+      telegramHost: 't.me',
+      // ... other options
+    }
+    ```
+
+    - `channel` — your Telegram channel username without the `@` prefix.
+    - `siteUrl` — the canonical URL where the site will be published. Used for RSS, sitemap, and OG tags.
+    - `locale` — supported values: `en`, `ja`, `zh`.
+    - `timezone` — any IANA timezone string, for example `UTC` or `America/New_York`.
+
+    See [Configuration overview](/configuration/overview) for the full list of options.
+  </Step>
+
+  <Step title="Sync channel content">
+    Run the sync command to fetch your channel's posts and mirror all media files locally:
+
+    ```bash
+    pnpm sync
+    ```
+
+    This generates:
+    - `src/generated/static-snapshot.json` — page data for all routes
+    - `public/search/index.json` — pre-built Lunr full-text search index
+    - `public/media/*` — locally mirrored images and videos
+
+    See [Sync command](/features/sync-command) for available flags.
+  </Step>
+
+  <Step title="Start the development server">
+    ```bash
+    pnpm dev:next
+    ```
+
+    The development server starts on port `4321`. Open [http://localhost:4321](http://localhost:4321) to preview your site.
+  </Step>
+
+  <Step title="Build for production">
+    ```bash
+    pnpm build
+    ```
+
+    <Note>
+      `pnpm build` automatically runs `pnpm sync --og-image --favicon` before `next build`. The `--og-image` flag generates an Open Graph image from your channel avatar, and `--favicon` generates `favicon.ico`, `favicon.svg`, and PWA icon PNGs. If you prefer to supply your own graphics, remove the corresponding flags from the `build` script in `package.json` and place your files in `public/` directly.
+    </Note>
+  </Step>
+</Steps>
 
 ## Next steps
 
-Now that you have your docs running, explore these key features:
-
 <CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
+  <Card title="Configuration overview" icon="sliders" href="/configuration/overview">
+    Explore every available option in `src/lib/constant.ts`.
+  </Card>
+  <Card title="Deployment" icon="cloud" href="/deployment">
+    Deploy to Cloudflare Pages, Vercel, or any static host.
+  </Card>
+  <Card title="Sync command" icon="arrows-rotate" href="/features/sync-command">
+    Learn the flags available for the sync script.
+  </Card>
+  <Card title="Full-text search" icon="magnifying-glass" href="/features/full-text-search">
+    Understand how the Lunr.js search index works.
+  </Card>
 </CardGroup>
-
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>

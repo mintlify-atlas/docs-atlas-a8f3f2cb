@@ -1,0 +1,105 @@
+---
+title: "Configure Telecast with a single TypeScript file"
+description: "All Telecast configuration lives in src/lib/constant.ts — no .env files, no runtime variables. Edit the SITE_CONSTANTS object, rebuild, and deploy."
+---
+
+All Telecast configuration lives in a single file: `src/lib/constant.ts`. There are no `.env` files and no runtime environment variables to manage. You fork the repository, edit the `SITE_CONSTANTS` object, and deploy. Everything — your channel name, SEO metadata, analytics IDs, Cloudflare settings, and display toggles — is declared in one place as plain TypeScript.
+
+## Configuration sections
+
+<CardGroup cols={2}>
+  <Card title="Channel identity" icon="id-card" href="/configuration/channel-identity">
+    Set your Telegram channel, site URL, locale, timezone, and social profile links.
+  </Card>
+  <Card title="Display options" icon="sliders" href="/configuration/display-options">
+    Toggle the description block, reactions, PWA support, custom banner, and RSS styling.
+  </Card>
+  <Card title="SEO & analytics" icon="chart-line" href="/configuration/seo-analytics">
+    Configure meta tags, Open Graph image, robots directives, Google Analytics, and Umami.
+  </Card>
+  <Card title="Cloudflare & media" icon="cloud" href="/configuration/cloudflare-media">
+    Enable Cloudflare image transforms, set the media mirror directory, and tune sync limits.
+  </Card>
+</CardGroup>
+
+## The configuration interface
+
+The full shape of the configuration is defined by the `SiteConstantConfig` interface in `src/lib/constant.ts`:
+
+```ts
+interface SiteConstantConfig {
+  channel: string
+  locale: string
+  timezone: string
+  siteUrl: string
+  telegramHost: string
+  staticProxy: string
+  cloudFlare: CloudFlareConfig
+  hideDescription: boolean
+  reactionsEnabled: boolean
+  pwa: boolean
+  website: string
+  twitter: string
+  github: string
+  telegram: string
+  mastodon: string
+  bluesky: string
+  customBanner: string
+  customFooter: string
+  rssBeautify: boolean
+  seo: SeoConfig
+  analytics: AnalyticsConfig
+  maxPages: number
+  mediaMirror: MediaMirrorConfig
+}
+```
+
+## Full configuration example
+
+This is the complete `SITE_CONSTANTS` object you edit when setting up your own instance:
+
+```ts
+export const SITE_CONSTANTS: SiteConstantConfig = {
+  channel: 'your_channel',
+  locale: 'en',
+  timezone: 'UTC',
+  siteUrl: 'https://tg.example.com',
+  telegramHost: 't.me',
+  staticProxy: '',
+  cloudFlare: {
+    transform: false,
+    transformPrefix: '/cdn-cgi/image/format=auto,quality=85/',
+  },
+  hideDescription: false,
+  reactionsEnabled: true,
+  pwa: true,
+  website: 'https://example.com',
+  twitter: 'username',
+  github: 'username',
+  telegram: 'your_channel',
+  mastodon: '',
+  bluesky: '',
+  customBanner: '',
+  customFooter: '',
+  rssBeautify: true,
+  seo: {
+    title: 'My Telecast',
+    description: 'Posts from my Telegram channel.',
+    ogImage: '/og-auto.png',
+    keywords: ['telegram', 'microblog'],
+    author: 'Your Name',
+    noIndex: false,
+    noFollow: false,
+  },
+  analytics: {
+    googleAnalyticsId: '',
+    umamiScriptUrl: '',
+    umamiWebsiteId: '',
+  },
+  maxPages: 50,
+  mediaMirror: {
+    directory: '/media',
+    userAgent: 'TelecastStaticSync/1.0',
+  },
+}
+```

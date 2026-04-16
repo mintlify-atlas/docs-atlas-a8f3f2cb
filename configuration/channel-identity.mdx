@@ -1,0 +1,110 @@
+---
+title: "Channel and site identity settings"
+description: "Set your Telegram channel username, canonical site URL, locale, timezone, static proxy, and all social profile links in src/lib/constant.ts."
+---
+
+The identity fields in `SITE_CONSTANTS` tell Telecast which Telegram channel to mirror and how to present your site to visitors and search engines. These are the first fields you should set when configuring a new instance.
+
+## Core identity fields
+
+<ParamField path="channel" type="string" required>
+  Your Telegram channel username without the `@` prefix. This is the channel whose posts are fetched and mirrored during `pnpm sync`.
+
+  ```ts
+  channel: 'your_channel',
+  ```
+</ParamField>
+
+<ParamField path="siteUrl" type="string" required>
+  The canonical base URL of your published site (e.g. `https://tg.example.com`). Used for SEO meta tags, RSS feed links, and sitemap generation. Do not include a trailing slash.
+
+  ```ts
+  siteUrl: 'https://tg.example.com',
+  ```
+</ParamField>
+
+<ParamField path="telegramHost" type="string">
+  The Telegram web host used for fetching channel HTML and generating public post links. Defaults to `t.me`. You should not need to change this unless you are working with an alternative Telegram web frontend.
+
+  ```ts
+  telegramHost: 't.me',
+  ```
+</ParamField>
+
+<ParamField path="locale" type="string">
+  Default locale for date formatting and UI strings. Supported values are `en`, `ja`, and `zh`. Defaults to `en`.
+
+  ```ts
+  locale: 'en',
+  ```
+</ParamField>
+
+<ParamField path="timezone" type="string">
+  IANA timezone string used when formatting post timestamps. Use any valid IANA timezone identifier such as `UTC`, `America/New_York`, or `Asia/Tokyo`.
+
+  ```ts
+  timezone: 'UTC',
+  ```
+</ParamField>
+
+<ParamField path="staticProxy" type="string">
+  A proxy base URL for Telegram-origin media at runtime. Leave this as an empty string for most deployments — media is mirrored locally at build time and served from your own domain. Only set this if you need a runtime proxy to serve Telegram media that was not mirrored during the build.
+
+  ```ts
+  staticProxy: '',
+  ```
+</ParamField>
+
+## Social links
+
+These fields populate the social profile links shown in the site sidebar. Set any field to an empty string to hide it from the UI.
+
+<ParamField path="website" type="string">
+  Your author or organization website URL, including the protocol (e.g. `https://example.com`).
+</ParamField>
+
+<ParamField path="twitter" type="string">
+  Your Twitter/X username only — no URL prefix and no `@` symbol (e.g. `username`).
+</ParamField>
+
+<ParamField path="github" type="string">
+  Your GitHub username only — no URL prefix (e.g. `username`).
+</ParamField>
+
+<ParamField path="telegram" type="string">
+  Your Telegram username for the sidebar link — no `@` prefix (e.g. `username`). This can differ from the `channel` field if your personal account is separate from the channel you are mirroring.
+</ParamField>
+
+<ParamField path="mastodon" type="string">
+  Your Mastodon handle without a protocol prefix, in the format `instance.social/@username` (e.g. `mastodon.social/@yourname`).
+</ParamField>
+
+<ParamField path="bluesky" type="string">
+  Your Bluesky handle (e.g. `username.bsky.social`).
+</ParamField>
+
+## Example
+
+```ts
+export const SITE_CONSTANTS: SiteConstantConfig = {
+  channel: 'your_channel',
+  locale: 'en',
+  timezone: 'America/New_York',
+  siteUrl: 'https://tg.example.com',
+  telegramHost: 't.me',
+  staticProxy: '',
+
+  website: 'https://example.com',
+  twitter: 'username',
+  github: 'username',
+  telegram: 'your_channel',
+  mastodon: 'mastodon.social/@username',
+  bluesky: 'username.bsky.social',
+
+  // ... rest of config
+}
+```
+
+<Tip>
+  Leave any social link field as an empty string to hide that icon from the sidebar. You do not need to remove the field from the object.
+</Tip>

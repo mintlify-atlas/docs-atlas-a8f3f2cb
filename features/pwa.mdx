@@ -1,0 +1,81 @@
+---
+title: "Progressive Web App (PWA) support"
+description: "Telecast supports PWA installation with a service worker, offline caching, and a web app manifest generated from your channel's configuration."
+---
+
+When PWA support is enabled, Telecast registers a service worker, generates a `manifest.webmanifest` from your site configuration, and serves PWA-compliant icons. Users can install the site as a standalone app on desktop and mobile, and the service worker keeps key pages available offline.
+
+## Enabling PWA
+
+Set `pwa: true` in `src/lib/constant.ts`:
+
+```ts
+pwa: true,
+```
+
+When `pwa` is `false`, Telecast returns a minimal web app manifest with no `display`, `icons`, or `start_url` fields, so browsers will not treat the site as installable.
+
+## Web app manifest
+
+The manifest is generated at build time from `src/app/manifest.ts` using values from `SITE_CONSTANTS`. When PWA is enabled, it includes:
+
+| Field | Value |
+|-------|-------|
+| `name` | `seo.title` from your config |
+| `short_name` | Your channel username |
+| `start_url` | `/` |
+| `display` | `standalone` |
+| `background_color` | `#ffffff` |
+| `theme_color` | `#0a0a1a` |
+| `orientation` | `portrait-primary` |
+| `categories` | `blog`, `news`, `social` |
+
+## PWA icons
+
+The `--favicon` flag on `pnpm sync` generates all required icon files from your Telegram channel avatar using the `sharp` library:
+
+| File | Size | Purpose |
+|------|------|---------|
+| `public/favicon.ico` | 48×48 | Browser tab and bookmarks |
+| `public/favicon.svg` | 128×128 (raster embedded in SVG) | Scalable favicon |
+| `public/icon-192x192.png` | 192×192 | Standard PWA icon |
+| `public/icon-512x512.png` | 512×512 | Large PWA icon |
+| `public/icon-maskable-512x512.png` | 512×512 | Adaptive icon for Android |
+
+The maskable icon adds 10% padding on each side over a dark `#0a0a1a` background so the avatar fits within Android's safe zone without being clipped.
+
+To generate icons during the full production build:
+
+```bash
+pnpm sync --favicon
+```
+
+Or as part of the combined build script (the default):
+
+```bash
+pnpm build
+# equivalent to: pnpm sync --og-image --favicon && next build --webpack
+```
+
+<Note>
+  If you prefer to supply your own icon files, remove `--favicon` from the `build` script in `package.json` and place your icon files in `public/` directly. The manifest references the same paths regardless of how the files were created.
+</Note>
+
+## Service worker
+
+The service worker is registered from `public/sw.js` and uses two caching strategies:
+
+<Tabs>
+  <Tab title="Cache-first (static assets)">
+    JavaScript, CSS, fonts, images, and video files are served from cache on repeat visits and downloaded in the background only when missing. This covers files matching extensions: `.js`, `.css`, `.woff2`, `.ttf`, `.otf`, `.ico`, `.svg`, `.png`, `.jpg`, `.webp`, `.avif`, `.gif`, `.mp4`, `.webm`.
+  </Tab>
+  <Tab title="Network-first (pages)">
+    HTML navigation requests are always attempted over the network first. If the network is unavailable, the service worker falls back to a cached copy. The home page, `favicon.svg`, and `favicon.ico` are pre-cached on install so the app shell is immediately available offline.
+  </Tab>
+</Tabs>
+
+On install, the service worker pre-caches `["/", "/favicon.svg", "/favicon.ico"]` so the app shell is available offline immediately after the first visit. On activate, stale cache versions are purged automatically.
+
+<Tip>
+  The service worker is inactive during local development (`localhost` and `127.0.0.1`). It unregisters itself and clears its caches so that hot-reload works normally.
+</Tip>

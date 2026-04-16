@@ -1,0 +1,107 @@
+---
+title: "Cloudflare image transforms and media proxy"
+description: "Enable Cloudflare Image Transform delivery for mirrored media, configure the media mirror directory, and tune how many pages the sync fetches."
+---
+
+Telecast mirrors Telegram media files locally at build time and serves them from your own domain. The `cloudFlare`, `mediaMirror`, `maxPages`, and `staticProxy` fields in `SITE_CONSTANTS` control how that media is stored, delivered, and fetched.
+
+## Cloudflare image transforms
+
+Cloudflare Image Transforms automatically resize and convert images on-the-fly at the edge, reducing bandwidth and improving load times without manual image processing.
+
+<ParamField path="cloudFlare.transform" type="boolean">
+  When `true`, Telecast rewrites static media paths from their default `/media/…` form to the prefixed version (e.g. `/cdn-cgi/image/format=auto,quality=85/media/…`) at build time. This rewrite happens entirely at build time — there is no runtime path conversion.
+
+  Set to `false` if you are not deploying behind Cloudflare. Media paths will stay as plain `/media/*` URLs.
+
+  Defaults to `true` in the reference config.
+
+  ```ts
+  cloudFlare: {
+    transform: true,
+  }
+  ```
+</ParamField>
+
+<ParamField path="cloudFlare.transformPrefix" type="string">
+  The URL prefix prepended to mirrored media paths when `cloudFlare.transform` is `true`. The default value configures automatic format selection and 85% quality compression.
+
+  ```ts
+  cloudFlare: {
+    transformPrefix: '/cdn-cgi/image/format=auto,quality=85/',
+  }
+  ```
+</ParamField>
+
+<Note>
+  Cloudflare image transforms are entirely optional. If you are not deploying to Cloudflare Pages or a Cloudflare-proxied domain, set `cloudFlare.transform` to `false`. The site works correctly with plain `/media/*` paths on any static host.
+</Note>
+
+## Static proxy
+
+<ParamField path="staticProxy" type="string">
+  A proxy base URL for Telegram-origin media at runtime. Leave as an empty string for most deployments. Media is mirrored locally during `pnpm sync`, so requests for `/media/*` files are served directly from your host without hitting Telegram's servers. Only set this if you need a runtime proxy for media that was not captured during the build.
+
+  ```ts
+  staticProxy: '',
+  ```
+</ParamField>
+
+## Sync and mirror settings
+
+<ParamField path="maxPages" type="number">
+  Maximum number of Telegram snapshot pages to fetch during `pnpm sync`. Each page contains roughly 20 posts. Increase this to mirror more history; decrease it to speed up the sync step. Defaults to `50`.
+
+  ```ts
+  maxPages: 50,
+  ```
+</ParamField>
+
+<ParamField path="mediaMirror.directory" type="string">
+  The public URL prefix under which mirrored media files are served (e.g. `/media`). Files are saved to `public/media` during the sync and served at this path. Change this only if you need to relocate the media directory.
+
+  Defaults to `/media`.
+
+  ```ts
+  mediaMirror: {
+    directory: '/media',
+  }
+  ```
+</ParamField>
+
+<ParamField path="mediaMirror.userAgent" type="string">
+  The `User-Agent` string sent when downloading media files from Telegram during `pnpm sync`. You can change this if you need to identify your sync client differently.
+
+  Defaults to `TelecastStaticSync/1.0`.
+
+  ```ts
+  mediaMirror: {
+    userAgent: 'TelecastStaticSync/1.0',
+  }
+  ```
+</ParamField>
+
+## Example
+
+```ts
+export const SITE_CONSTANTS: SiteConstantConfig = {
+  // ... identity and display fields
+
+  staticProxy: '',
+  cloudFlare: {
+    transform: false,
+    transformPrefix: '/cdn-cgi/image/format=auto,quality=85/',
+  },
+  maxPages: 50,
+  mediaMirror: {
+    directory: '/media',
+    userAgent: 'TelecastStaticSync/1.0',
+  },
+
+  // ... rest of config
+}
+```
+
+<Tip>
+  If you deploy to Cloudflare Pages and want to use image transforms, set `cloudFlare.transform` to `true` before running the build. The path rewrite happens at build time, so you must rebuild after changing this value.
+</Tip>

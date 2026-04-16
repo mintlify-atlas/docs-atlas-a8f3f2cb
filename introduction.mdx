@@ -1,0 +1,48 @@
+---
+title: "Telecast: self-hosted Telegram channel microblog"
+description: "Telecast mirrors your Telegram channel into a fast, self-hosted static microblog built with Next.js — no server required, deployable anywhere."
+---
+
+Telecast is a Next.js static site generator that turns any public Telegram channel into a self-hosted microblog website. You fork the repo, configure your channel name, run `pnpm sync` to fetch and mirror all channel content locally, then `pnpm build` to compile pure static HTML. The result is a fast, searchable, PWA-ready site you can deploy to any static host — Cloudflare Pages, Vercel, GitHub Pages, or your own server.
+
+## Why Telecast
+
+Most Telegram channel embeds require an active server or a third-party service. Telecast takes a different approach: everything is resolved at build time. Media files are downloaded and stored locally, a full-text search index is pre-built with Lunr.js, and the entire site compiles to static HTML with no runtime dependencies. You own the content, the hosting, and the infrastructure.
+
+## Key features
+
+- **Static generation** — All pages compile to plain HTML at build time. No Node.js server needed in export mode.
+- **Media mirroring** — Images and videos are downloaded from Telegram and served from your own domain under `/media/`.
+- **Full-text search** — A Lunr.js index is generated at build time and loaded client-side for instant search.
+- **PWA support** — Optional service worker, offline caching, and web app manifest.
+- **RSS feed** — Automatically generated feed with optional XSLT styling for browser readability.
+- **i18n** — Built-in locale support for English, Japanese, and Chinese.
+- **Reactions** — Telegram-style emoji reactions rendered on each post.
+
+## Requirements
+
+| Requirement | Version |
+|-------------|---------|
+| Node.js | `>= 22` |
+| pnpm | `>= 10` |
+
+## License
+
+Telecast is open source under [AGPL-3.0](https://github.com/andatoshiki/telecast/blob/master/LICENSE).
+
+## Where to go next
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Fork, configure, and run your first Telecast site in minutes.
+  </Card>
+  <Card title="Configuration overview" icon="sliders" href="/configuration/overview">
+    Learn every option in `src/lib/constant.ts`.
+  </Card>
+  <Card title="Sync command" icon="arrows-rotate" href="/features/sync-command">
+    Understand how `pnpm sync` fetches and mirrors channel content.
+  </Card>
+  <Card title="Deployment" icon="cloud" href="/deployment">
+    Deploy to Cloudflare Pages, Vercel, or any static host.
+  </Card>
+</CardGroup>

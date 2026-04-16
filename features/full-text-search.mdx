@@ -1,0 +1,84 @@
+---
+title: "Full-text search with Lunr.js"
+description: "Telecast builds a pre-compiled Lunr.js search index at sync time and serves it as a static JSON file — no search server required."
+---
+
+Telecast ships full-text search without any server-side infrastructure. During `pnpm sync`, every post is indexed with [Lunr.js](https://lunrjs.com/) and the serialized index is written to `public/search/index.json`. At runtime, the browser loads that file once and runs all queries locally — results appear instantly.
+
+## How the index is built
+
+The sync script collects all posts from the static snapshot, converts them into search documents, and passes them through Lunr's index builder. The resulting index is serialized and saved alongside the raw document list and a generation timestamp.
+
+```ts
+const index = lunr(function buildIndex() {
+  this.ref('id')
+  this.field('title', { boost: 8 })
+  this.field('text', { boost: 3 })
+  this.field('tags', { boost: 14 })
+
+  for (const doc of documents) {
+    this.add(doc)
+  }
+})
+```
+
+### Field boost weights
+
+| Field | Boost | What it contains |
+|-------|-------|-----------------|
+| `tags` | 14 | Hashtags extracted from the post, stored as space-separated values including both `tag` and `#tag` forms. |
+| `title` | 8 | The post title, if one was detected. |
+| `text` | 3 | Stripped plain text of the post body and HTML content. |
+
+Tag matches rank highest, followed by title matches, then body text. This means searching a hashtag returns tagged posts at the top of results.
+
+## Search document structure
+
+Each post is reduced to a `SearchDocument` before indexing:
+
+```ts
+interface SearchDocument {
+  id: string
+  title: string
+  text: string
+  tags: string
+  datetime: string
+}
+```
+
+The `text` field is built by joining the post's plain `text` property with the HTML content after stripping all tags. The `tags` field includes both bare and hash-prefixed forms of every tag (e.g. `nextjs #nextjs`).
+
+## Index file structure
+
+The file written to `public/search/index.json` has three top-level keys:
+
+```json
+{
+  "generatedAt": "2025-01-01T00:00:00.000Z",
+  "documents": [...],
+  "index": { ... }
+}
+```
+
+| Key | Description |
+|-----|-------------|
+| `generatedAt` | ISO 8601 timestamp of when the index was built. |
+| `documents` | Raw `SearchDocument` array used to render result cards. |
+| `index` | Serialized Lunr index for query execution. |
+
+## Using search in the UI
+
+The pre-built index powers two search surfaces in the Telecast UI:
+
+- **Command palette (`⌘K` / `Ctrl+K`)** — opens a floating dialog where you can type keywords and see matching posts inline. Press `Enter` to navigate to a result or open the full results page.
+- **Search results panel** — a dedicated `/search` page that accepts a query via URL parameter and lists all matching posts.
+
+Both surfaces load `public/search/index.json` client-side on first use. Subsequent searches are instant because the index stays in memory.
+
+## Tag-based filtering
+
+Alongside free-text search, the word cloud component on the tags page lets you filter posts by a specific tag. Clicking a tag navigates to its filtered view using the same routing system, separate from the Lunr index.
+
+<Tip>
+  Because the index is a static file, you can regenerate it at any time by re-running `pnpm sync`. The old `public/search/index.json` is overwritten with the latest posts.
+</Tip>

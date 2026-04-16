@@ -1,0 +1,245 @@
+---
+title: "Self-host Telecast on any static platform"
+description: "Choose between standalone Node.js and pure static export, then deploy Telecast to Cloudflare Pages, Vercel, Netlify, GitHub Pages, or a VPS."
+---
+
+Telecast can be deployed to any platform that runs Node.js or serves static files. Which output mode you choose depends on your host: `standalone` produces a Node.js server bundle, while `export` produces pure static HTML with no server required.
+
+## Output modes
+
+The output mode is controlled by the `NEXT_OUTPUT_MODE` environment variable and read at build time in `next.config.mjs`:
+
+```ts
+const outputMode = process.env.NEXT_OUTPUT_MODE === 'export' ? 'export' : 'standalone'
+```
+
+| Mode | How to activate | Output directory |
+|------|-----------------|-----------------|
+| `standalone` (default) | No env var needed | `.next/` |
+| `export` | Set `NEXT_OUTPUT_MODE=export` | `out/` |
+
+<Note>
+  The sync step fetches posts and media from Telegram and must run before `next build`. This requires internet access to Telegram at build time. The default `build` script in `package.json` handles this automatically by running `pnpm sync --og-image --favicon` before `next build`.
+</Note>
+
+## Requirements
+
+| Tool | Minimum version |
+|------|----------------|
+| Node.js | `>= 22` |
+| pnpm | `>= 10` |
+
+## Deployment targets
+
+<Tabs>
+  <Tab title="Cloudflare Pages">
+    Cloudflare Pages serves static files from its CDN. Use export mode for this target.
+
+    <Steps>
+      <Step title="Fork and configure">
+        Fork [andatoshiki/telecast](https://github.com/andatoshiki/telecast) and edit `src/lib/constant.ts` with your channel username and `siteUrl`.
+      </Step>
+
+      <Step title="Connect to Cloudflare Pages">
+        In the Cloudflare Pages dashboard, create a new project and connect your forked repository.
+      </Step>
+
+      <Step title="Set build configuration">
+        Apply the following settings in the Cloudflare Pages build configuration:
+
+        | Setting | Value |
+        |---------|-------|
+        | Build command | `pnpm build` |
+        | Build output directory | `out` |
+        | Node.js version | `22` |
+
+        Add the following environment variable:
+
+        | Variable | Value |
+        |----------|-------|
+        | `NEXT_OUTPUT_MODE` | `export` |
+      </Step>
+
+      <Step title="Deploy">
+        Save the settings. Cloudflare Pages triggers a build automatically. Every subsequent push to your main branch rebuilds and redeploys the site.
+      </Step>
+    </Steps>
+
+    <Tip>
+      If you want Cloudflare image transforms for media delivery, set `cloudFlare.transform: true` in `src/lib/constant.ts` before building. Media paths are rewritten to use the `/cdn-cgi/image/` prefix at build time. The transform only applies when `NODE_ENV=production`, in CI, or when `TELECAST_FORCE_CLOUDFLARE_TRANSFORM=1` is set.
+    </Tip>
+  </Tab>
+
+  <Tab title="Vercel">
+    Vercel supports both output modes. Use `standalone` (the default) to run Telecast as a Node.js server with full header support, or `export` for a purely static deployment.
+
+    <Steps>
+      <Step title="Fork and configure">
+        Fork [andatoshiki/telecast](https://github.com/andatoshiki/telecast) and edit `src/lib/constant.ts` with your channel username and `siteUrl`.
+      </Step>
+
+      <Step title="Import project in Vercel">
+        In the Vercel dashboard, click **Add New Project** and import your forked repository.
+      </Step>
+
+      <Step title="Set build configuration">
+        | Setting | Value |
+        |---------|-------|
+        | Framework preset | Next.js |
+        | Build command | `pnpm build` |
+        | Node.js version | `22.x` |
+
+        To use export mode, add `NEXT_OUTPUT_MODE=export` as an environment variable in the Vercel project settings. Leave it unset for standalone (Node.js server) mode.
+      </Step>
+
+      <Step title="Deploy">
+        Click **Deploy**. Vercel detects the Next.js framework and configures the runtime automatically for standalone mode. For export mode, it serves the `out/` directory as static files.
+      </Step>
+    </Steps>
+
+    <Note>
+      In `standalone` mode, the security headers defined in `next.config.mjs` (`X-Frame-Options`, `Referrer-Policy`, `X-Content-Type-Options`) are applied at the server level. These headers are not available in `export` mode.
+    </Note>
+  </Tab>
+
+  <Tab title="Netlify">
+    Netlify serves static files. Use export mode for this target.
+
+    <Steps>
+      <Step title="Fork and configure">
+        Fork [andatoshiki/telecast](https://github.com/andatoshiki/telecast) and edit `src/lib/constant.ts` with your channel username and `siteUrl`.
+      </Step>
+
+      <Step title="Connect your repository">
+        In the Netlify dashboard, click **Add new site** and connect your forked repository.
+      </Step>
+
+      <Step title="Set build configuration">
+        | Setting | Value |
+        |---------|-------|
+        | Build command | `pnpm build` |
+        | Publish directory | `out` |
+
+        Add the environment variable `NEXT_OUTPUT_MODE=export` in the Netlify site settings under **Environment variables**.
+      </Step>
+
+      <Step title="Deploy">
+        Trigger a deploy from the Netlify dashboard, or push to your main branch to trigger an automatic build.
+      </Step>
+    </Steps>
+
+    <Warning>
+      `trailingSlash` is automatically set to `true` in export mode (see `next.config.mjs`). Ensure your Netlify configuration does not strip trailing slashes, or add a redirect rule to preserve them.
+    </Warning>
+  </Tab>
+
+  <Tab title="GitHub Pages">
+    GitHub Pages serves static files. Use export mode and automate builds with GitHub Actions.
+
+    <Steps>
+      <Step title="Fork and configure">
+        Fork [andatoshiki/telecast](https://github.com/andatoshiki/telecast) and edit `src/lib/constant.ts` with your channel username and `siteUrl`.
+      </Step>
+
+      <Step title="Enable GitHub Pages">
+        In your repository settings, go to **Pages** and set the source to **GitHub Actions**.
+      </Step>
+
+      <Step title="Add a workflow file">
+        Create `.github/workflows/deploy.yml` with the following content:
+
+        ```yaml
+        name: Deploy to GitHub Pages
+        on:
+          push:
+            branches: [main]
+        jobs:
+          build-deploy:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@v4
+              - uses: pnpm/action-setup@v4
+                with:
+                  version: '>=10'
+              - uses: actions/setup-node@v4
+                with:
+                  node-version: '22'
+                  cache: 'pnpm'
+              - name: Install dependencies
+                run: pnpm install
+              - name: Build
+                run: pnpm build
+                env:
+                  NEXT_OUTPUT_MODE: export
+              - name: Deploy to GitHub Pages
+                uses: peaceiris/actions-gh-pages@v4
+                with:
+                  github_token: ${{ secrets.GITHUB_TOKEN }}
+                  publish_dir: ./out
+        ```
+      </Step>
+
+      <Step title="Push and deploy">
+        Push the workflow file to your main branch. The action runs automatically and publishes the `out/` directory to GitHub Pages.
+      </Step>
+    </Steps>
+  </Tab>
+
+  <Tab title="VPS / Docker">
+    Run Telecast as a Node.js server on a VPS or in a Docker container using standalone mode.
+
+    <Steps>
+      <Step title="Build on your server or in CI">
+        Clone your configured fork, install dependencies, and run the build:
+
+        ```bash
+        pnpm install
+        pnpm build
+        ```
+
+        No `NEXT_OUTPUT_MODE` variable is needed. The default output is `standalone`.
+      </Step>
+
+      <Step title="Start the server">
+        ```bash
+        pnpm start
+        ```
+
+        The server starts on port `4321` by default. Proxy this with nginx or Caddy to expose it on port 80/443.
+      </Step>
+
+      <Step title="Set up a reverse proxy (optional)">
+        Example nginx configuration:
+
+        ```nginx
+        server {
+            listen 80;
+            server_name tg.example.com;
+
+            location / {
+                proxy_pass http://127.0.0.1:4321;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+            }
+        }
+        ```
+      </Step>
+    </Steps>
+
+    <Note>
+      To keep the site up to date, re-run `pnpm build` and restart the server whenever you want to pull new posts from Telegram. Each build re-syncs channel content.
+    </Note>
+  </Tab>
+</Tabs>
+
+## Keeping content up to date
+
+Each build re-runs `pnpm sync`, which fetches posts from Telegram and re-mirrors all media files. Existing media files are not re-downloaded (the sync uses content-addressed file names), so subsequent builds are incremental.
+
+The `maxPages` option in `src/lib/constant.ts` controls how many pages of posts are fetched per sync. Each page contains roughly 20 posts. The default is `50`.
+
+```ts
+maxPages: 50,
+```
+
+Increase this value to fetch more history, or decrease it to speed up build times.

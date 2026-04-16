@@ -1,0 +1,81 @@
+{
+  "projectType": "frontend",
+  "projectName": "Telecast",
+  "projectDescription": "A self-hosted, statically-generated Next.js microblog that mirrors your Telegram channel into a fast, searchable, and beautifully designed website with full-text search, PWA support, and automatic media mirroring.",
+  "theme": "almond",
+  "primaryColor": "#6b4b32",
+  "lightColor": "#271711",
+  "darkColor": "#dabd92",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "deployment"
+            ]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "configuration/overview",
+              "configuration/channel-identity",
+              "configuration/display-options",
+              "configuration/seo-analytics",
+              "configuration/cloudflare-media"
+            ]
+          },
+          {
+            "group": "Features",
+            "pages": [
+              "features/sync-command",
+              "features/full-text-search",
+              "features/pwa",
+              "features/rss-feed",
+              "features/i18n"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/self-hosting",
+              "guides/media-mirroring",
+              "guides/custom-branding",
+              "guides/troubleshooting"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Static site generation (SSG) with Next.js App Router — outputs pure static HTML",
+    "Telegram channel mirroring with automatic media download to public/media/",
+    "Lunr.js full-text search with pre-built index at build time",
+    "PWA support with service worker, web manifest, and offline caching",
+    "Internationalization (i18n) supporting English, Japanese, and Chinese",
+    "RSS feed with optional XSLT browser styling",
+    "Command palette (⌘K) for quick navigation",
+    "Cloudflare Image Transform integration for optimized media delivery",
+    "Auto-generated Open Graph image and favicons from channel avatar",
+    "Telegram-native image grid layout and DPlayer video playback",
+    "Emoji reactions display with Twemoji rendering",
+    "Tag-based post filtering with word cloud",
+    "Google Analytics and Umami analytics support"
+  ],
+  "publicApiSurface": [
+    "SITE_CONSTANTS: SiteConstantConfig — single configuration object in src/lib/constant.ts",
+    "pnpm sync [--og-image] [--favicon] — CLI command to fetch and mirror Telegram channel content",
+    "pnpm dev — start development server on port 4321",
+    "pnpm build — run sync then next build to produce static output",
+    "NEXT_OUTPUT_MODE=export — env var to switch between standalone and static export output modes",
+    "TELECAST_FORCE_CLOUDFLARE_TRANSFORM=1 — env var to force Cloudflare image transforms",
+    "src/generated/static-snapshot.json — generated channel snapshot used at build time",
+    "public/search/index.json — pre-built Lunr search index",
+    "public/media/ — locally mirrored media files directory"
+  ]
+}

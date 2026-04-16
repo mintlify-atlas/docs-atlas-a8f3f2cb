@@ -1,0 +1,89 @@
+---
+title: "How Telecast mirrors Telegram media locally"
+description: "Telecast downloads all images and videos from your Telegram channel to public/media/ at build time, so your site has no external media dependencies."
+---
+
+When you run `pnpm sync`, Telecast walks every post in your channel and downloads each image, video, and avatar to `public/media/`. This means your deployed site serves all media from your own host — not from Telegram's CDN. Posts load faster, media is always available, and there are no cross-origin requests to Telegram at runtime.
+
+## How file naming works
+
+Each media file is named using the first 32 hex characters of a SHA-256 hash of its original URL, plus the file extension. This makes downloads content-addressed — the same URL always maps to the same local file, so incremental syncs never re-download what's already on disk.
+
+```
+<sha256(url)[0:32]><extension>
+```
+
+For example: `a3f2c8d10e4b5967f2aa3c1d8e7b0123.jpg`
+
+## Supported media types
+
+| MIME type | Extension |
+|-----------|-----------|
+| `image/jpeg` | `.jpg` |
+| `image/png` | `.png` |
+| `image/webp` | `.webp` |
+| `image/gif` | `.gif` |
+| `image/avif` | `.avif` |
+| `image/svg+xml` | `.svg` |
+| `video/mp4` | `.mp4` |
+| `video/webm` | `.webm` |
+| `video/quicktime` | `.mov` |
+
+## Image metadata and blur placeholders
+
+After downloading images, `pnpm sync` generates `public/media/image-meta.json`. This file stores width, height, and a tiny base64-encoded JPEG placeholder for each image, enabling blur-up loading in the browser:
+
+```json
+{
+  "a3f2c8d10e4b5967f2aa3c1d8e7b0123.jpg": {
+    "w": 1280,
+    "h": 720,
+    "b": "data:image/jpeg;base64,/9j/4AAQ..."
+  }
+}
+```
+
+The placeholder is a 20px-wide JPEG at 40% quality — small enough to inline, good enough to show while the full image loads.
+
+## Configuration
+
+<ParamField path="mediaMirror.directory" type="string">
+  Public URL prefix for mirrored media files. Defaults to `/media`. Files are written to `public{directory}/`.
+</ParamField>
+
+<ParamField path="mediaMirror.userAgent" type="string">
+  User-Agent string sent when downloading files from Telegram. Defaults to `TelecastStaticSync/1.0`.
+</ParamField>
+
+<ParamField path="maxPages" type="number">
+  Maximum number of Telegram snapshot pages to fetch. Each page contains roughly 20 posts. Defaults to `50` (about 1,000 posts).
+</ParamField>
+
+```ts src/lib/constant.ts
+maxPages: 50,
+mediaMirror: {
+  directory: '/media',
+  userAgent: 'TelecastStaticSync/1.0',
+},
+```
+
+## Sync output
+
+After each run, Telecast prints a summary:
+
+```
+[telecast] mirroring media [============================] 100% (243/243)
+[telecast] mirrored media urls: 243, new downloads: 12
+[telecast] image meta: 231 entries (12 new)
+```
+
+- **mirrored media urls** — total unique media URLs resolved
+- **new downloads** — files actually downloaded this run (others were already cached)
+
+<Tip>
+  Incremental syncs are fast. Only newly added posts trigger new downloads. Existing files in `public/media/` are never re-fetched.
+</Tip>
+
+<Note>
+  Individual media download failures are silently skipped. If a file can't be fetched, the original Telegram URL is kept in the snapshot. Check your network connectivity if you see many missing media files after deployment.
+</Note>

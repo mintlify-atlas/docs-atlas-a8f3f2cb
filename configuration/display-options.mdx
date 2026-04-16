@@ -1,0 +1,87 @@
+---
+title: "Display and feature toggle options"
+description: "Boolean toggles and markdown content fields that control Telecast's UI — hide the channel description, enable reactions, PWA, and custom banner or footer."
+---
+
+The display options in `SITE_CONSTANTS` let you turn individual UI features on or off and inject custom content into specific regions of the page. All of these fields have sensible defaults, so you only need to set the ones you want to change.
+
+## Feature toggles
+
+<ParamField path="hideDescription" type="boolean">
+  When `true`, the channel description block that appears below the site header is hidden. Set this to `true` if your channel description is long or not relevant to your site's visitors.
+
+  Defaults to `false`.
+
+  ```ts
+  hideDescription: false,
+  ```
+</ParamField>
+
+<ParamField path="reactionsEnabled" type="boolean">
+  When `true`, Telegram-style emoji reactions are rendered on each post, mirroring what Telegram shows on the original message. Set to `false` to hide reactions entirely.
+
+  Defaults to `true`.
+
+  ```ts
+  reactionsEnabled: true,
+  ```
+</ParamField>
+
+<ParamField path="pwa" type="boolean">
+  When `true`, Telecast registers a service worker, generates a web app manifest, and enables offline caching so the site can be installed as a Progressive Web App. Set to `false` to disable all PWA behavior.
+
+  Defaults to `true`.
+
+  ```ts
+  pwa: true,
+  ```
+</ParamField>
+
+<ParamField path="rssBeautify" type="boolean">
+  When `true`, the RSS XML feed output includes an XSLT stylesheet that renders the feed as a readable HTML page when opened directly in a browser. When `false`, the feed is plain XML.
+
+  Defaults to `true`.
+
+  ```ts
+  rssBeautify: true,
+  ```
+</ParamField>
+
+## Custom content
+
+<ParamField path="customBanner" type="string">
+  Inline markdown rendered as a banner above the main content area. Use this for announcements, notices, or links you want to surface to every visitor. Leave as an empty string to disable the banner.
+
+  ```ts
+  customBanner: '**This site is open source.** [View on GitHub](https://github.com/you/repo)',
+  ```
+</ParamField>
+
+<ParamField path="customFooter" type="string">
+  Inline markdown that replaces the default Telecast footer. Leave as an empty string to keep the default footer text.
+
+  ```ts
+  customFooter: 'Built with [Telecast](https://github.com/andatoshiki/telecast).',
+  ```
+</ParamField>
+
+## Example
+
+```ts
+export const SITE_CONSTANTS: SiteConstantConfig = {
+  // ... identity fields
+
+  hideDescription: false,
+  reactionsEnabled: true,
+  pwa: true,
+  customBanner: '**Welcome!** [Source on GitHub](https://github.com/you/repo)',
+  customFooter: '',
+  rssBeautify: true,
+
+  // ... rest of config
+}
+```
+
+<Note>
+  Both `customBanner` and `customFooter` accept inline markdown only. Block-level markdown (headings, lists, code fences) may not render correctly in these slots.
+</Note>

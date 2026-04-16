@@ -1,97 +1,61 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: "Telecast: mirror your Telegram channel as a microblog"
+description: "Telecast turns any public Telegram channel into a self-hosted, statically-generated microblog. Fork, configure one file, and deploy in minutes."
 ---
 
-## Setting up
+Telecast is a self-hosted static site generator that mirrors your Telegram channel into a fast, searchable, and beautifully designed microblog website. Built with Next.js, React, shadcn/ui, and Tailwind CSS, it outputs pure static HTML — meaning you can host it anywhere: Cloudflare Pages, Vercel, Netlify, GitHub Pages, or your own server.
 
-Get your documentation site up and running in minutes.
-
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
-
-## Make it yours
-
-Design a docs site that looks great and empowers your users.
-
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Get your Telegram channel live as a microblog in under five minutes.
   </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
+  <Card title="Configuration" icon="sliders" href="/configuration/overview">
+    One file controls everything — channel, SEO, analytics, and more.
   </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
+  <Card title="Sync command" icon="rotate" href="/features/sync-command">
+    Learn how Telecast fetches and mirrors your channel content at build time.
   </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
+  <Card title="Deployment" icon="cloud-arrow-up" href="/deployment">
+    Deploy to Cloudflare Pages, Vercel, or any static host.
   </Card>
-</Columns>
+</CardGroup>
 
-## Create beautiful pages
+## What Telecast does
 
-Everything you need to create world-class documentation.
+Telecast connects to your public Telegram channel and, at build time, fetches all posts, downloads every image and video to `public/media/`, and compiles a fully static website with no runtime server required. Every page is pre-rendered HTML — fast, portable, and easy to self-host.
 
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
+<CardGroup cols={2}>
+  <Card title="Full-text search" icon="magnifying-glass" href="/features/full-text-search">
+    Pre-built Lunr.js search index makes every post instantly discoverable.
   </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
+  <Card title="PWA support" icon="mobile" href="/features/pwa">
+    Service worker, web manifest, and offline caching out of the box.
   </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
+  <Card title="RSS feed" icon="rss" href="/features/rss-feed">
+    Auto-generated RSS and JSON feeds with optional XSLT browser styling.
   </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
+  <Card title="Internationalization" icon="language" href="/features/i18n">
+    Built-in i18n for English, Japanese, and Chinese audiences.
   </Card>
-</Columns>
+</CardGroup>
 
-## Need inspiration?
+## Get started
 
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+<Steps>
+  <Step title="Fork and clone">
+    Fork the [andatoshiki/telecast](https://github.com/andatoshiki/telecast) repository and clone it locally.
+  </Step>
+  <Step title="Edit the configuration">
+    Open `src/lib/constant.ts` and set your `channel` username and `siteUrl`. That's the minimum required configuration.
+  </Step>
+  <Step title="Run the sync">
+    Run `pnpm sync` to fetch your channel content, mirror media files, and build the search index.
+  </Step>
+  <Step title="Build and deploy">
+    Run `pnpm build` and deploy the output to your preferred static host.
+  </Step>
+</Steps>
+
+<Tip>
+  The full `pnpm build` script automatically runs `pnpm sync --og-image --favicon` before `next build`, so a single command generates all artifacts and produces a ready-to-deploy site.
+</Tip>

@@ -1,0 +1,114 @@
+---
+title: "Internationalization: English, Japanese, Chinese"
+description: "Telecast has built-in i18n for English, Japanese, and Chinese with locale-prefixed routing and a configurable default locale served at the root path."
+---
+
+Telecast ships with built-in internationalization for three locales. All UI strings are externalized into locale message files, and the routing system handles locale prefixes automatically. You configure a single default locale in `src/lib/constant.ts`; that locale is served at the root path while non-default locales use a path prefix.
+
+## Supported locales
+
+```ts
+export const SUPPORTED_LOCALES = ['en', 'ja', 'zh'] as const
+```
+
+| Locale | Language |
+|--------|----------|
+| `en` | English (default) |
+| `ja` | Japanese |
+| `zh` | Simplified Chinese |
+
+## Setting the default locale
+
+Set the `locale` key in `src/lib/constant.ts`:
+
+```ts
+locale: 'en',
+```
+
+Accepted values are `'en'`, `'ja'`, and `'zh'`. The default locale is `'en'` if the value is missing or unrecognized.
+
+## URL routing
+
+The default locale is served without a locale prefix. Non-default locales use a prefix segment:
+
+| Locale | Example URL |
+|--------|-------------|
+| `en` (default) | `/`, `/posts/123`, `/tags` |
+| `ja` | `/ja/`, `/ja/posts/123`, `/ja/tags` |
+| `zh` | `/zh/`, `/zh/posts/123`, `/zh/tags` |
+
+The `localizePath` function in `src/lib/i18n.ts` handles this logic. It strips the prefix for the default locale and adds it for non-default locales:
+
+```ts
+localizePath('en', '/posts/123') // → '/posts/123'
+localizePath('ja', '/posts/123') // → '/ja/posts/123'
+localizePath('zh', '/')          // → '/zh'
+```
+
+## Locale normalization
+
+The `normalizeAppLocale` function accepts a raw locale string and returns the nearest supported locale:
+
+- Strings starting with `ja` map to `'ja'`.
+- Strings starting with `zh` map to `'zh'`.
+- Everything else, including empty or unrecognized values, maps to `'en'`.
+
+This means browser `Accept-Language` values like `ja-JP` or `zh-CN` are handled correctly.
+
+## Timezone and date display
+
+The `timezone` option in `src/lib/constant.ts` controls how post timestamps are formatted across all locales:
+
+```ts
+timezone: 'UTC',
+```
+
+Set this to any IANA timezone string (e.g. `America/New_York`, `Asia/Tokyo`) to display dates in your local time. The same timezone applies regardless of which locale is active.
+
+## Adding locale messages
+
+Locale strings live in `src/locales/`. Each file exports a `LocaleMessages` object that covers UI labels for navigation, the feed, the command palette, the search panel, and metadata.
+
+<CodeGroup>
+
+```ts src/locales/en.ts
+export const enMessages: LocaleMessages = {
+  nav: {
+    home: 'Home',
+    tags: 'Tags',
+    search: 'Search',
+    back: 'Back',
+  },
+  // ...
+}
+```
+
+```ts src/locales/ja.ts
+export const jaMessages: LocaleMessages = {
+  nav: {
+    home: 'ホーム',
+    tags: 'タグ',
+    search: '検索',
+    back: '戻る',
+  },
+  // ...
+}
+```
+
+```ts src/locales/zh.ts
+export const zhMessages: LocaleMessages = {
+  nav: {
+    home: '首页',
+    tags: '标签',
+    search: '搜索',
+    back: '返回',
+  },
+  // ...
+}
+```
+
+</CodeGroup>
+
+<Note>
+  Adding a new locale requires creating a matching file in `src/locales/`, adding the locale code to `SUPPORTED_LOCALES` in `src/lib/i18n.ts`, and wiring the messages into the `MESSAGES` record in the same file.
+</Note>

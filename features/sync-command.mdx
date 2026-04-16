@@ -1,0 +1,93 @@
+---
+title: "Sync command: fetch and mirror Telegram content"
+description: "pnpm sync fetches all posts from your Telegram channel, downloads media to public/media/, and builds the Lunr full-text search index."
+---
+
+The sync command is the build-time step that makes Telecast fully static. It fetches every post from your configured Telegram channel, downloads and stores all referenced media files locally, and pre-builds the Lunr.js full-text search index — all before `next build` runs. Once sync completes, the site has no dependency on Telegram at runtime.
+
+## Usage
+
+```bash
+pnpm sync [flags]
+```
+
+## Flags
+
+| Flag | Effect |
+|------|--------|
+| `--og-image` | Generates `public/og-auto.png` from channel metadata. |
+| `--favicon` | Generates `favicon.ico`, `favicon.svg`, and PWA icon PNGs from the channel avatar. |
+
+Both flags are optional. They auto-generate graphics from your Telegram channel avatar so you can deploy without creating any images manually. If you prefer your own hand-crafted assets, remove the corresponding flag from the `build` script in `package.json` and place your files in `public/` directly.
+
+## Generated artifacts
+
+After a successful sync, the following files are written or updated:
+
+| Artifact | Description |
+|----------|-------------|
+| `src/generated/static-snapshot.json` | Page data for all routes. Read at build time by Next.js. |
+| `public/search/index.json` | Pre-built Lunr full-text search index. |
+| `public/media/*` | Locally mirrored copies of all images and videos. |
+| `public/og-auto.png` | Open Graph image (only when `--og-image` is passed). |
+| `public/favicon.ico`, `public/favicon.svg`, `public/icon-*.png` | Favicon and PWA icons (only when `--favicon` is passed). |
+
+## Running the sync
+
+<Steps>
+  <Step title="Configure your channel">
+    Open `src/lib/constant.ts` and ensure `channel` is set to your Telegram channel username (without `@`). The sync command reads this value to know which channel to fetch.
+
+    ```ts
+    channel: 'your_channel',
+    ```
+  </Step>
+
+  <Step title="Run sync">
+    Run the sync command without flags to fetch posts and mirror media:
+
+    ```bash
+    pnpm sync
+    ```
+
+    To also generate an Open Graph image and favicons from the channel avatar:
+
+    ```bash
+    pnpm sync --og-image --favicon
+    ```
+  </Step>
+
+  <Step title="Build the site">
+    After sync completes, run the Next.js build:
+
+    ```bash
+    pnpm build
+    ```
+
+    <Note>
+      The default `build` script in `package.json` already chains both commands together: `pnpm sync --og-image --favicon && next build --webpack`. Running `pnpm build` is enough for a full production build.
+    </Note>
+  </Step>
+</Steps>
+
+## Controlling how many pages are fetched
+
+The `maxPages` option in `src/lib/constant.ts` limits how many Telegram snapshot pages the sync fetches. Each page contains roughly 20 posts. The default is `50`.
+
+```ts
+maxPages: 50,
+```
+
+Increase this if your channel has more than ~1000 posts and you want the full history mirrored.
+
+## Cloudflare image transforms
+
+When `cloudFlare.transform` is `true`, the sync rewrites all local media paths from `/media/…` to the Cloudflare transform prefix (e.g. `/cdn-cgi/image/format=auto,quality=85/media/…`). This rewrite happens at sync time — there is no runtime path conversion.
+
+Outside of production CI environments, transform rewrites are skipped by default even when `cloudFlare.transform` is `true`. To force the rewrite during a local or manual sync, set the environment variable:
+
+```bash
+TELECAST_FORCE_CLOUDFLARE_TRANSFORM=1 pnpm sync
+```
+
+Accepted values are `1`, `true`, or `yes`. The transform also activates automatically when `NODE_ENV=production` or when running under GitHub Actions (`GITHUB_ACTIONS=true`).

@@ -1,0 +1,87 @@
+---
+title: "Custom banners, footer, and Open Graph images"
+description: "Personalize your Telecast site with a custom banner, footer text, auto-generated OG image from your channel avatar, or your own hand-crafted assets."
+---
+
+Telecast gives you several ways to make your microblog feel like your own. You can add a persistent banner above the feed, replace the default footer, and control exactly what image appears when your site is shared on social media — all through `src/lib/constant.ts` and a few optional build flags.
+
+## Custom banner
+
+Set `customBanner` to any inline markdown string. It renders as a styled notice above the main post feed, useful for pinned announcements, calls-to-action, or site descriptions.
+
+```ts src/lib/constant.ts
+customBanner: '**This project is open source under AGPL-3.0.** [Get Telecast on GitHub](https://github.com/andatoshiki/telecast)',
+```
+
+Leave it as an empty string to hide the banner entirely:
+
+```ts
+customBanner: '',
+```
+
+<Note>
+  Only inline markdown is supported — bold, italic, links, and inline code. Block elements like headings or lists are not rendered.
+</Note>
+
+## Custom footer
+
+Set `customFooter` to replace the default Telecast footer with your own markdown. Leave it empty to keep the default footer.
+
+```ts src/lib/constant.ts
+customFooter: 'Built by [Your Name](https://example.com) · [Source](https://github.com/you/repo)',
+```
+
+## Open Graph image
+
+The OG image appears when your site is shared on Twitter, Discord, Slack, and other platforms.
+
+### Auto-generated from channel avatar
+
+Pass `--og-image` to the sync command to automatically generate `public/og-auto.png` from your channel's avatar and metadata:
+
+```bash
+pnpm sync --og-image
+```
+
+The generated image is 1200×630px and uses your channel's avatar, title, and description in a clean card layout. The `pnpm build` script runs this flag automatically.
+
+### Using your own OG image
+
+Place a custom image file in `public/` and point `seo.ogImage` at it:
+
+```ts src/lib/constant.ts
+seo: {
+  ogImage: '/my-custom-og.png',
+  // ...
+},
+```
+
+Then remove `--og-image` from the build script in `package.json` so your file is not overwritten:
+
+```json package.json
+"build": "pnpm sync --favicon && next build --webpack"
+```
+
+## Favicons and PWA icons
+
+### Auto-generated from channel avatar
+
+Pass `--favicon` to generate `favicon.ico`, `favicon.svg`, `icon-192x192.png`, `icon-512x512.png`, and `icon-maskable-512x512.png` from your channel avatar:
+
+```bash
+pnpm sync --favicon
+```
+
+The maskable icon uses 10% padding on each side over a dark background (`#0a0a1a`), meeting the PWA maskable icon safe-zone requirement.
+
+### Using your own favicons
+
+Place your favicon files directly in `public/` and remove `--favicon` from the build script:
+
+```json package.json
+"build": "pnpm sync --og-image && next build --webpack"
+```
+
+<Tip>
+  If you have a strong brand identity, consider using your own hand-crafted OG image and favicons. Remove both flags and manage those files yourself — Telecast will use whatever is already in `public/`.
+</Tip>

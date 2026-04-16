@@ -1,0 +1,141 @@
+---
+title: "Deploy Telecast to Cloudflare, Vercel, or static hosts"
+description: "Deploy your Telecast microblog as a standalone Node.js server or pure static HTML export to Cloudflare Pages, Vercel, GitHub Pages, and more."
+---
+
+Telecast supports two output modes controlled by the `NEXT_OUTPUT_MODE` environment variable. The default `standalone` mode produces a Node.js server bundle. Setting `NEXT_OUTPUT_MODE=export` switches to a pure static HTML export that works on any file host with no server required.
+
+## Output modes
+
+| Mode | How to activate | Output |
+|------|----------------|--------|
+| `standalone` (default) | No env var needed | Node.js server bundle in `.next/` |
+| `export` | `NEXT_OUTPUT_MODE=export` | Static HTML files in `out/` |
+
+The output mode is read in `next.config.mjs` at build time:
+
+```ts
+const outputMode = process.env.NEXT_OUTPUT_MODE === 'export' ? 'export' : 'standalone'
+```
+
+## Before you build
+
+The sync step must run before `next build` to generate page data, media files, and the search index. The default `build` script in `package.json` handles this automatically:
+
+```bash
+pnpm sync --og-image --favicon && next build --webpack
+```
+
+Run `pnpm build` rather than calling `next build` directly to ensure everything is in place.
+
+## Deployment targets
+
+<Tabs>
+  <Tab title="Cloudflare Pages">
+    Cloudflare Pages serves static files directly from its CDN. Use export mode for this target.
+
+    **Build settings in Cloudflare Pages dashboard:**
+
+    | Setting | Value |
+    |---------|-------|
+    | Build command | `pnpm build` |
+    | Build output directory | `out` |
+    | Node.js version | `22` |
+
+    **Environment variables to set:**
+
+    | Variable | Value |
+    |----------|-------|
+    | `NEXT_OUTPUT_MODE` | `export` |
+
+    <Tip>
+      If you use Cloudflare image transforms for media delivery, also enable `cloudFlare.transform: true` in `src/lib/constant.ts` before building. This rewrites mirrored media paths to use the `/cdn-cgi/image/` prefix at build time.
+    </Tip>
+
+    After connecting your fork to Cloudflare Pages and saving these settings, every push to your main branch triggers an automatic build and deploy.
+  </Tab>
+
+  <Tab title="Vercel">
+    Vercel supports both output modes. Use `standalone` (the default) to run Telecast as a Node.js server with full header support, or `export` for a purely static deployment.
+
+    **Deploy with the Vercel CLI:**
+
+    <CodeGroup>
+      ```bash Standalone (default)
+      vercel deploy
+      ```
+
+      ```bash Static export
+      NEXT_OUTPUT_MODE=export vercel deploy
+      ```
+    </CodeGroup>
+
+    **Build settings in Vercel dashboard:**
+
+    | Setting | Value |
+    |---------|-------|
+    | Framework preset | Next.js |
+    | Build command | `pnpm build` |
+    | Output directory | Leave as default (`.next` for standalone, `out` for export) |
+    | Node.js version | `22.x` |
+
+    Set `NEXT_OUTPUT_MODE=export` as an environment variable in the Vercel project settings if you want static output.
+
+    <Note>
+      In `standalone` mode, Vercel automatically configures the Node.js runtime. The security headers defined in `next.config.mjs` (including `X-Frame-Options` and `Referrer-Policy`) are applied at the server level and are not available in `export` mode.
+    </Note>
+  </Tab>
+
+  <Tab title="GitHub Pages / Netlify / generic static">
+    Any host that serves static files works with export mode. Build the site locally or in CI, then upload the `out/` directory.
+
+    **Local build:**
+
+    ```bash
+    NEXT_OUTPUT_MODE=export pnpm build
+    ```
+
+    The `out/` directory contains the complete static site.
+
+    **GitHub Pages with GitHub Actions:**
+
+    ```yaml
+    - name: Install dependencies
+      run: pnpm install
+
+    - name: Build
+      run: pnpm build
+      env:
+        NEXT_OUTPUT_MODE: export
+
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v4
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./out
+    ```
+
+    **Netlify build settings:**
+
+    | Setting | Value |
+    |---------|-------|
+    | Build command | `pnpm build` |
+    | Publish directory | `out` |
+    | Environment variable | `NEXT_OUTPUT_MODE=export` |
+
+    <Warning>
+      `trailingSlash` is automatically set to `true` when using export mode (see `next.config.mjs`). Make sure your host does not strip trailing slashes, or configure a redirect rule to preserve them.
+    </Warning>
+  </Tab>
+</Tabs>
+
+## After deployment
+
+Once deployed, verify the following are working:
+
+- Posts are rendering with media loaded from `/media/`
+- The search box returns results (requires `public/search/index.json` to be deployed)
+- The RSS feed is accessible at `/rss.xml`
+- OG image appears when sharing a link (check with a social preview tool)
+
+For troubleshooting common issues, see the [Troubleshooting guide](/guides/troubleshooting).

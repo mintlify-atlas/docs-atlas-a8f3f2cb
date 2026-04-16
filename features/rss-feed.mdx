@@ -1,0 +1,56 @@
+---
+title: "RSS feed and JSON feed generation"
+description: "Telecast auto-generates an RSS 2.0 feed at /rss.xml and a JSON Feed 1.1 at /rss.json. Both are static, cached for one hour, and auto-discovered by feed readers."
+---
+
+Telecast automatically generates two syndication feeds from your channel's posts: an RSS 2.0 feed and a JSON Feed 1.1. Both are produced as static responses at build time and cached for one hour. Readers and aggregators can subscribe to either endpoint to receive new posts.
+
+## Feed endpoints
+
+| Format | URL | Spec |
+|--------|-----|------|
+| RSS 2.0 | `/rss.xml` | Standard XML RSS |
+| JSON Feed | `/rss.json` | [JSON Feed 1.1](https://jsonfeed.org/version/1.1) |
+
+## RSS feed (`/rss.xml`)
+
+The RSS feed is a standard `<rss version="2.0">` document. Each post becomes an `<item>` with the following fields:
+
+| Element | Source |
+|---------|--------|
+| `<guid>` | Absolute URL to the post page |
+| `<link>` | Absolute URL to the post page |
+| `<title>` | Post title, or `Post {id}` if no title was detected |
+| `<pubDate>` | Post datetime formatted as UTC RFC 822 |
+| `<description>` | Full post HTML content wrapped in `<![CDATA[...]]>` |
+
+The channel-level `<title>`, `<description>`, and `<link>` are taken from your Telegram channel metadata.
+
+## JSON feed (`/rss.json`)
+
+The JSON feed follows the [JSON Feed 1.1](https://jsonfeed.org/version/1.1) specification. Each post is represented as an object with:
+
+| Field | Source |
+|-------|--------|
+| `id` | Absolute URL to the post page |
+| `url` | Absolute URL to the post page |
+| `title` | Post title |
+| `content_html` | Full post HTML content |
+| `tags` | Array of hashtags extracted from the post |
+| `date_published` | Post datetime as ISO 8601 string |
+
+## XSLT browser styling
+
+The `rssBeautify` config option (`boolean`, default `true`) is reserved for XSLT-based browser styling of the RSS feed. An `rss.xsl` stylesheet is included in the `public/` directory for this purpose. Feed readers parse the raw XML directly regardless of this setting.
+
+```ts
+rssBeautify: true,
+```
+
+## Caching
+
+Both feeds are served with `Cache-Control: public, max-age=3600`, so responses are cached for one hour by browsers and CDNs. Since the feeds are static files compiled at build time, they do not change between deploys.
+
+## Linking to feeds
+
+The RSS feed link appears in the sidebar navigation and in the `<head>` of every page as an autodiscovery `<link>` tag. Feed reader extensions in browsers will detect it automatically when a user visits your site.
